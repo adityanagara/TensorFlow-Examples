@@ -69,22 +69,33 @@ def two_layer_batch_norm(x, weights, biases, dropout):
     out = tf.add(tf.matmul(fc2, weights['out']), biases['out'])
     
     return out
-'''
-# Layer 2 without BN
-w2 = tf.Variable(w2_initial)
-b2 = tf.Variable(tf.zeros([100]))
-z2 = tf.matmul(l1,w2)+b2
-l2 = tf.nn.sigmoid(z2)
+    
+def two_layer_batch_norm_2(x, weights, biases, dropout):
+    
+    epsilon = 1e-3
+    z1_bn = tf.matmul(x,weights['wd1_bn'])
+    
+    batch_mean1, batch_var1 = tf.nn.moments(z1_bn,[0])
+    
+    z1_hat = (z1_bn - batch_mean1) / tf.sqrt(batch_var1 + epsilon)
+    
+    bn1 = weights['scale1'] * z1_hat + weights['beta1']
+    
+    l_bn1 = tf.nn.relu(bn1)
+    
+    z2_bn = tf.matmul(l_bn1,weights['wd2_bn'])
+    
+    batch_mean2, batch_var2 = tf.nn.moments(z2_bn,[0])
+    
+    bn2 = tf.nn.batch_normalization(z2_bn,batch_mean2,batch_var2,weights['beta2'],weights['scale2'],epsilon)
+#    fc2 = tf.add(tf.matmul(l_bn1, weights['wd2']), biases['bd2'])
+#    fc2 = tf.nn.relu(fc2)
 
-# Layer 2 with BN, using Tensorflows built-in BN function
-w2_BN = tf.Variable(w2_initial)
-z2_BN = tf.matmul(l1_BN,w2_BN)
-batch_mean2, batch_var2 = tf.nn.moments(z2_BN,[0])
-scale2 = tf.Variable(tf.ones([100]))
-beta2 = tf.Variable(tf.zeros([100]))
-BN2 = tf.nn.batch_normalization(z2_BN,batch_mean2,batch_var2,beta2,scale2,epsilon)
-l2_BN = tf.nn.sigmoid(BN2)
-'''
+#    fc2 = tf.add(tf.matmul(fc1, weights['wd2']), biases['bd2'])
+    # Output, class prediction
+    out = tf.add(tf.matmul(bn2, weights['out']), biases['out'])
+    
+    return out
 # Store layers weight & bias
 weights = {
 
@@ -115,8 +126,24 @@ bias_BN = {
            'bd2' : tf.Variable(tf.random_normal([128])),
            'out': tf.Variable(tf.random_normal([n_classes]))
            }
+
+
+weights_BN_2 = {
+              'wd1_bn' : tf.Variable(tf.random_normal([784, 256])),
+              'scale1' : tf.Variable(tf.ones([256])),
+              'beta1' : tf.Variable(tf.zeros([256])),
+              'wd2_bn' : tf.Variable(tf.random_normal([256, 128])),
+              'scale2' : tf.Variable(tf.ones([128])),
+              'beta2' : tf.Variable(tf.ones([128])),
+              'out' :tf.Variable(tf.random_normal([128, n_classes]))
+              }
+
+bias_BN_2 = {
+#           'bd2' : tf.Variable(tf.random_normal([128])),
+           'out': tf.Variable(tf.random_normal([n_classes]))
+           }
 # Construct model
-pred = two_layer_new(x, weights, biases, keep_prob)
+#pred = two_layer_new(x, weights, biases, keep_prob)
 pred = two_layer_batch_norm(x, weights_BN, bias_BN, keep_prob)
 
 # Define loss and optimizer
