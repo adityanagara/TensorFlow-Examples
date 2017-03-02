@@ -21,7 +21,7 @@ mnist = input_data.read_data_sets("MNIST_data", one_hot=True)
 
 # Parameters
 learning_rate = 0.001 # 0.01
-training_epochs = 10
+training_epochs = 20
 batch_size = 256
 display_step = 1
 examples_to_show = 10
@@ -66,7 +66,7 @@ def variable_summaries(var):
       tf.summary.histogram('histogram', var)
 
 # Building the encoder
-def build_layer(layer_name, input_layer, act=tf.nn.sigmoid):
+def build_layer(layer_name, input_layer, act=tf.nn.tanh):
     with tf.name_scope(layer_name):
         with tf.name_scope('weights'):
             weights = random_variable(layer_weights_shape[layer_name])
