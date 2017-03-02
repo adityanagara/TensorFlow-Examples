@@ -1,9 +1,7 @@
 '''
-A Convolutional Network implementation example using TensorFlow library.
-This example is using the MNIST database of handwritten digits
-(http://yann.lecun.com/exdb/mnist/)
+Batch normalization with simple neural networks
 
-Author: Aymeric Damien
+Author: Aditya
 Project: https://github.com/aymericdamien/TensorFlow-Examples/
 '''
 
@@ -26,7 +24,7 @@ display_step = 10
 # Network Parameters
 n_input = 784 # MNIST data input (img shape: 28*28)
 n_classes = 10 # MNIST total classes (0-9 digits)
-dropout = 1.0 # Dropout, probability to keep units
+dropout = 0.6 # Dropout, probability to keep units
 
 # tf Graph input
 x = tf.placeholder(tf.float32, [None, n_input])
@@ -41,6 +39,8 @@ def two_layer_new(x, weights, biases, dropout):
     fc1 = tf.nn.relu(fc1)
 
     fc2 = tf.add(tf.matmul(fc1, weights['wd2']), biases['bd2'])
+    
+    fc2 = tf.nn.dropout(fc2, dropout)
     # Output, class prediction
     out = tf.add(tf.matmul(fc2, weights['out']), biases['out'])
     
@@ -63,13 +63,12 @@ def two_layer_batch_norm(x, weights, biases, dropout):
     
     fc2 = tf.add(tf.matmul(l_bn1, weights['wd2']), biases['bd2'])
     fc2 = tf.nn.relu(fc2)
-
-#    fc2 = tf.add(tf.matmul(fc1, weights['wd2']), biases['bd2'])
+    
     # Output, class prediction
     out = tf.add(tf.matmul(fc2, weights['out']), biases['out'])
     
     return out
-    
+
 def two_layer_batch_norm_2(x, weights, biases, dropout):
     
     epsilon = 1e-3
@@ -88,10 +87,6 @@ def two_layer_batch_norm_2(x, weights, biases, dropout):
     batch_mean2, batch_var2 = tf.nn.moments(z2_bn,[0])
     
     bn2 = tf.nn.batch_normalization(z2_bn,batch_mean2,batch_var2,weights['beta2'],weights['scale2'],epsilon)
-#    fc2 = tf.add(tf.matmul(l_bn1, weights['wd2']), biases['bd2'])
-#    fc2 = tf.nn.relu(fc2)
-
-#    fc2 = tf.add(tf.matmul(fc1, weights['wd2']), biases['bd2'])
     # Output, class prediction
     out = tf.add(tf.matmul(bn2, weights['out']), biases['out'])
     
@@ -102,7 +97,7 @@ weights = {
     'wd1': tf.Variable(tf.random_normal([784, 256])),
     
     'wd2': tf.Variable(tf.random_normal([256, 128])),
-    # 1024 inputs, 10 outputs (class prediction)
+    
     'out': tf.Variable(tf.random_normal([128, n_classes]))
 }
 
@@ -126,8 +121,6 @@ bias_BN = {
            'bd2' : tf.Variable(tf.random_normal([128])),
            'out': tf.Variable(tf.random_normal([n_classes]))
            }
-
-
 weights_BN_2 = {
               'wd1_bn' : tf.Variable(tf.random_normal([784, 256])),
               'scale1' : tf.Variable(tf.ones([256])),
@@ -139,12 +132,12 @@ weights_BN_2 = {
               }
 
 bias_BN_2 = {
-#           'bd2' : tf.Variable(tf.random_normal([128])),
            'out': tf.Variable(tf.random_normal([n_classes]))
            }
 # Construct model
 #pred = two_layer_new(x, weights, biases, keep_prob)
 pred = two_layer_batch_norm(x, weights_BN, bias_BN, keep_prob)
+#pred = two_layer_batch_norm_2(x, weights_BN_2, bias_BN_2, keep_prob)
 
 # Define loss and optimizer
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=y))
@@ -179,10 +172,6 @@ with tf.Session() as sess:
         for i in range(total_batch_test):
             batch_xs, batch_ys = mnist.test.next_batch(batch_size)
                 
-#            loss, acc = sess.run([cost, accuracy],
-#                                       feed_dict = {x: batch_xs,
-#                                                    y: batch_ys,
-#                                                    keep_prob : 1.0})
         acc = sess.run(accuracy, feed_dict={x: mnist.test.images,
                                       y: mnist.test.labels,
                                       keep_prob: 1.})
@@ -190,8 +179,7 @@ with tf.Session() as sess:
             max_acc = acc
             print("New best testing Accuracy %.4f at epoch %d"%(acc, epoch))
         
-#        print('Epoch: %d'%epoch,'Cost = %.4f'%c,
-#              'Test cost %.4f'%loss,'Test Acc = %.4f'%acc)
+
         
     print("Optimization Finished!")
 
